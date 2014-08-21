@@ -67,6 +67,19 @@ hash_fnv1_32(const char *key, size_t key_length)
 }
 
 uint32_t
+wfhash_fnv1a_32(const char *key, uint32_t hash)
+{
+    unsigned char *x = (unsigned char *)key;
+
+    while(*x) {
+      hash ^= (uint32_t)*x++;
+      hash += (hash<<1) + (hash<<4) + (hash<<7) + (hash<<8) + (hash<<24);
+    }
+
+    return hash;
+}
+
+uint32_t
 hash_fnv1a_32(const char *key, size_t key_length)
 {
     uint32_t hash = FNV_32_INIT;

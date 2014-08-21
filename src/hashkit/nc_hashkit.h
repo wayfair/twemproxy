@@ -64,6 +64,7 @@ uint32_t hash_fnv1_64(const char *key, size_t key_length);
 uint32_t hash_fnv1a_64(const char *key, size_t key_length);
 uint32_t hash_fnv1_32(const char *key, size_t key_length);
 uint32_t hash_fnv1a_32(const char *key, size_t key_length);
+uint32_t wfhash_fnv1a_32(const char *key, uint32_t hash);
 uint32_t hash_hsieh(const char *key, size_t key_length);
 uint32_t hash_jenkins(const char *key, size_t length);
 uint32_t hash_murmur(const char *key, size_t length);

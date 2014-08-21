@@ -27,6 +27,8 @@
 #define KETAMA_POINTS_PER_SERVER    160 /* 40 points per hash */
 #define KETAMA_MAX_HOSTLEN          86
 
+static uint32_t FNV_32_INIT = 2166136261UL;
+
 static uint32_t
 ketama_hash(const char *key, size_t key_length, uint32_t alignment)
 {
@@ -159,33 +161,30 @@ ketama_update(struct server_pool *pool)
         }
 
         pct = (float)server->weight / (float)total_weight;
-        pointer_per_server = (uint32_t) ((floorf((float) (pct * KETAMA_POINTS_PER_SERVER / 4 * (float)nlive_server + 0.0000000001))) * 4);
-        pointer_per_hash = 4;
 
         log_debug(LOG_VERB, "%.*s:%"PRIu16" weight %"PRIu32" of %"PRIu32" "
                   "pct %0.5f points per server %"PRIu32"",
                   server->name.len, server->name.data, server->port,
                   server->weight, total_weight, pct, pointer_per_server);
 
+        uint32_t hval = FNV_32_INIT;
         for (pointer_index = 1;
-             pointer_index <= pointer_per_server / pointer_per_hash;
+             pointer_index <= KETAMA_POINTS_PER_SERVER;
              pointer_index++) {
 
             char host[KETAMA_MAX_HOSTLEN]= "";
             size_t hostlen;
             uint32_t x;
 
-            hostlen = snprintf(host, KETAMA_MAX_HOSTLEN, "%.*s-%u",
-                               server->name.len, server->name.data,
-                               pointer_index - 1);
-
-            for (x = 0; x < pointer_per_hash; x++) {
-                value = ketama_hash(host, hostlen, x);
-                pool->continuum[continuum_index].index = server_index;
-                pool->continuum[continuum_index++].value = value;
+            if (snprintf(host, KETAMA_MAX_HOSTLEN, "%.*s",
+                         server->name.len, server->name.data) < 0) {
+                return NC_ERROR;
             }
+            hval = wfhash_fnv1a_32(host, hval);
+            pool->continuum[continuum_index].index = server_index;
+            pool->continuum[continuum_index++].value = hval;
         }
-        pointer_counter += pointer_per_server;
+        pointer_counter += KETAMA_POINTS_PER_SERVER;
     }
 
     pool->ncontinuum = pointer_counter;
